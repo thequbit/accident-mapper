@@ -1,0 +1,157 @@
+<html>
+<head>
+
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
+
+    <script src="http://code.jquery.com/jquery-1.11.0.js"></script>
+    <script src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js"></script>
+
+    <script src="pace.min.js"></script>
+
+    <style>
+
+.pace .pace-progress {
+  background: #29d;
+  position: fixed;
+  z-index: 2000;
+  top: 0;
+  left: 0;
+  height: 2px;
+
+  -webkit-transition: width 1s;
+  -moz-transition: width 1s;
+  -o-transition: width 1s;
+  transition: width 1s;
+}
+
+.pace-inactive {
+  display: none;
+}
+
+    </style>
+
+</head>
+<body>
+
+    <div id="waiting" style="width: 1200px; margin: auto; padding-top: 50px; font-size: 24px;"><b>Please wait while the site loads ... (This may take up to 60 seconds)</b></div>
+
+    <div class="top" id="top">
+    
+        <div style="width: 1200px; margin: auto; padding-bottom: 25px; padding-top: 25px; text-align: center; font-size: 38px; color: #444444;">Traffic Accidents Visualized</div>
+
+        <div style="width: 1200px; margin: auto; padding-bottom: 5px; padding-top: 5px; text-align: center; color: #444444;">
+            Select Municipality: <div id="places"></div><button id="btn_places" onclick="loaddata( $('#cmbo_places').val());">Display Incidents</button>
+        </div>
+        
+        <div style="border: 1px solid #DDDDDD; margin: auto; width: 1200px; height: 600px;" id="map-canvas"></div>
+
+        <div style="margin: auto; width: 1200px; text-align: center; padding-top: 20px; font-size: 12px; color: #444444;">Timothy Duffy | Hacks/Hackers Rochester | GPLv3 | <a href="">Source</a></div>
+
+    </div>
+
+    <script>
+
+        $('#top').hide();
+
+        var map_container = document.getElementById('map-canvas');
+        var counties = null;
+        var current_towns = null;
+        var old_counties = [];
+        var town_schools = [];
+
+        var lineWeight = 20;
+
+        var events = [];
+
+        $(document).ready(function() {
+
+            var main = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: 'Map data © OpenStreetMap contributors',
+                minZoom: 10,
+                maxZoom: 16,
+            });
+
+            var counties = L.layerGroup();
+            var current_towns = L.layerGroup();
+
+            window.map = L.map('map-canvas', {
+                center: [43.16412, -77.60124], //[42.6501, -76.3659],
+                zoom: 11,
+                layers: [
+                    main
+                ]
+            });
+
+            L.control.scale({
+                position: 'bottomright',
+                metric: true,
+               imperial: true
+            }).addTo(map);
+
+            var eventsurl = "events.json";
+            $.getJSON( eventsurl, function ( data ) {
+                events = data;
+                $('#waiting').hide();
+                $('#top').show();
+            });
+
+            var placesurl = "places.json";
+            $.getJSON( placesurl, function ( data ) {
+                var html = '<select id="cmbo_places">';
+                for( var i=0; i<data.length; i++ ) {
+                    html += '<option value="' + data[i] + '">' + data[i] + '</option>';
+                }
+                html += '</select>';
+                $('#places').html(html);
+            });
+
+        });
+
+        var markers = [];
+
+        function loaddata(place) {
+
+            console.log('removing markers ...');
+
+            // remove all exisitng markers
+            for(var i=0; i<markers.length; i++) {
+                map.removeLayer(markers[i]);
+            }
+
+            console.log('adding markers ...');
+
+            // conditionally add new points
+            for(var i=0; i<events.length; i++) {
+
+                console.log(events[i]['municipality'] + ' == ' + places);
+
+                if ( events[i]['municipality'] == place ) {
+
+                    lat = events[i]['lat'];
+                    lng = events[i]['lng'];
+
+                    var marker = L.marker([lat, lng]).addTo(map);
+
+                    var html = '';
+                    html += "<b>Municipality</b>: " + events[i]['municipality'] + '</br>';
+                    html += "<b>Collision Type</b>: " + events[i]['collisiontype'] + '</br>';
+                    html += "<b>Class</b>: " + events[i]['class'] + '</br>';
+                    html += "<b>Vehicle Count</b>: " + events[i]['vehiclecount'] + '</br>';
+                    html += "<b>Fatalities</b>: " + events[i]['fatalities'] + '</br>';
+                    html += "<b>Date/Time</b>: " + events[i]['date'] + ' ' + events[i]['time'] + '</br>';
+
+                    marker.bindPopup(html);
+
+                    markers.push(marker);
+                }
+            }
+
+            console.log('done.');
+
+        }
+
+    </script>
+
+
+</body>
+</html>
