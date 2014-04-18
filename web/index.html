@@ -1,6 +1,8 @@
 <html>
 <head>
 
+    <title>Monroe County Traffic Injuries & Fatalities, 2010-2013</title>
+
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
 
     <script src="http://code.jquery.com/jquery-1.11.0.js"></script>
@@ -10,48 +12,55 @@
 
     <style>
 
-.pace .pace-progress {
-  background: #29d;
-  position: fixed;
-  z-index: 2000;
-  top: 0;
-  left: 0;
-  height: 2px;
+        .pace .pace-progress {
+            background: #29d;
+            position: fixed;
+            z-index: 2000;
+            top: 0;
+            left: 0;
+            height: 2px;
 
-  -webkit-transition: width 1s;
-  -moz-transition: width 1s;
-  -o-transition: width 1s;
-  transition: width 1s;
-}
+            -webkit-transition: width 1s;
+            -moz-transition: width 1s;
+            -o-transition: width 1s;
+            transition: width 1s;
+        }
 
-.pace-inactive {
-  display: none;
-}
+        .pace-inactive {
+            display: none;
+        }
 
     </style>
 
 </head>
 <body>
 
-    <div id="waiting" style="width: 1200px; margin: auto; padding-top: 50px; font-size: 24px;"><b>Please wait while the site loads ... (This may take up to 60 seconds)</b></div>
+    <!--<div id="waiting" style="width: 1200px; margin: auto; padding-top: 50px; font-size: 24px;"><b>Please wait while the site loads ... (This may take up to 60 seconds)</b></div>-->
 
     <div class="top" id="top">
     
-        <div style="width: 1200px; margin: auto; padding-bottom: 25px; padding-top: 25px; text-align: center; font-size: 38px; color: #444444;">Traffic Accidents Visualized</div>
+        <div style="width: 1200px; margin: auto; padding-bottom: 25px; padding-top: 25px; text-align: center; font-size: 38px; color: #444444;">Monroe County Traffic Injuries & Fatalities, 2010-2013</div>
 
         <div style="width: 1200px; margin: auto; padding-bottom: 5px; padding-top: 5px; text-align: center; color: #444444;">
+        <!--
             Select Municipality: <div id="places"></div><button id="btn_places" onclick="loaddata( $('#cmbo_places').val());">Display Incidents</button>
-        </div>
+        -->
         
-        <div style="border: 1px solid #DDDDDD; margin: auto; width: 1200px; height: 600px;" id="map-canvas"></div>
+        </div>
 
-        <div style="margin: auto; width: 1200px; text-align: center; padding-top: 20px; font-size: 12px; color: #444444;">Timothy Duffy | Hacks/Hackers Rochester | GPLv3 | <a href="">Source</a></div>
+        <div style="width: 1200px; margin: auto;">
+        
+        <div style="border: 1px solid #DDDDDD; margin: auto; width: 350px; height: 600px; float: left; margin-left: 25px; padding: 5px 5px 5px 5px;" id="querybox"></div>
+
+        <div style="border: 1px solid #DDDDDD; margin: auto; width: 800px; height: 600px; float: left;" id="map-canvas"></div>
+
+        </div>
+
+        <div style="margin: auto; width: 1200px; text-align: center; padding-top: 20px; font-size: 12px; color: #444444;">Hacks/Hackers Rochester | GPLv3 | <a href="https://github.com/thequbit/accident-mapper/">Source</a></div>
 
     </div>
 
     <script>
-
-        $('#top').hide();
 
         var map_container = document.getElementById('map-canvas');
         var counties = null;
@@ -71,12 +80,14 @@
                 maxZoom: 16,
             });
 
-            var counties = L.layerGroup();
-            var current_towns = L.layerGroup();
+            //var counties = L.layerGroup();
+            //var current_towns = L.layerGroup();
+
+            console.log('creating map ...');
 
             window.map = L.map('map-canvas', {
                 center: [43.16412, -77.60124], //[42.6501, -76.3659],
-                zoom: 11,
+                zoom: 10,
                 layers: [
                     main
                 ]
@@ -88,24 +99,91 @@
                imperial: true
             }).addTo(map);
 
-            var eventsurl = "events.json";
-            $.getJSON( eventsurl, function ( data ) {
-                events = data;
-                $('#waiting').hide();
-                $('#top').show();
-            });
+            $.getJSON( '/getfields.json', function( data ) {
+            
+                var html = '';
 
-            var placesurl = "places.json";
-            $.getJSON( placesurl, function ( data ) {
-                var html = '<select id="cmbo_places">';
-                for( var i=0; i<data.length; i++ ) {
-                    html += '<option value="' + data[i] + '">' + data[i] + '</option>';
+                for( key in data ) {
+                
+                    console.log('creating select for ' + key + ' ...');
+
+                    html += '<b>' + key + ':</b></br>';
+                    
+                    html += '<select id="' + key + '">"';
+                    html += '<option value="*" selected>Any</option>';
+                    for( var i=0; i< data[key].length; i++ ) {
+                        html += '<option val="' + data[key][i] + '">' + data[key][i] + '</option>'
+                    }
+                    html += '</select></br>';
                 }
-                html += '</select>';
-                $('#places').html(html);
+
+                html += '</br></br><button onclick="doquery();">Query</button>';
+                html += '</br></br><button onclick="clearmap();">Clear Map</button>';
+
+                $('#querybox').html(html);
+
             });
 
         });
+
+        function clearmap() {
+
+            // remove all exisitng markers
+            for(var i=0; i<markers.length; i++) {
+                map.removeLayer(markers[i]);
+            }
+
+        }
+
+        var markers = [];
+
+        function doquery() {
+            
+            var selects = document.getElementsByTagName('select');
+
+            // generate our query
+            var url = '/query.json?';
+            for( var i=0; i<selects.length; i++ ) {
+
+                var field = selects[i].id;
+                var val = selects[i].value;
+
+                if ( val != '*' ) {
+                    url += encodeURIComponent(field) + '=' + encodeURIComponent(val) + '&';
+                }
+            }
+
+            // query the server for the data
+            $.getJSON( url, function ( data ) {
+            
+                clearmap();
+
+                // conditionally add new points
+                for(var i=0; i<data['results'].length; i++) {
+
+                    lat = data['results'][i]['lat'];
+                    lng = data['results'][i]['lng'];
+
+                    var marker = L.marker([lat, lng]).addTo(map);
+
+                    var html = '';
+                    html += "<b>Municipality</b>: " + data['results'][i]['municipality'] + '</br>';
+                    html += "<b>Collision Type</b>: " + data['results'][i]['collisiontype'] + '</br>';
+                    html += "<b>Class</b>: " + data['results'][i]['class'] + '</br>';
+                    html += "<b>Vehicle Count</b>: " + data['results'][i]['vehiclecount'] + '</br>';
+                    html += "<b>Fatalities</b>: " + data['results'][i]['fatalities'] + '</br>';
+                    html += "<b>Date/Time</b>: " + data['results'][i]['date'] + ' ' + data['results'][i]['time'] + '</br>';
+
+                    marker.bindPopup(html);
+
+                    markers.push(marker);
+                }
+
+            });
+            
+        }
+
+        /*
 
         var markers = [];
 
@@ -149,6 +227,8 @@
             console.log('done.');
 
         }
+
+        */
 
     </script>
 

@@ -31,9 +31,8 @@ def readdata(csvfile):
     f = open(csvfile,'r')
     reader = csv.reader(f)
 
-    events = []
     count = 0
-    places = []
+    accidents = []
     for row in reader:
         #print row
         #raise Exception('debug')
@@ -46,32 +45,29 @@ def readdata(csvfile):
         #cells = line.split(',')
         cells = row
         event = {}
-        #event['queryid'] = cells[QUERYID]
-        #event['casenum'] = cells[CASE_NUM]
-        #event['year'] = cells[CASE_YEAR]
-        #event['region'] = cells[REGN_CNTY_CDE]
-        #event['municipality'] = cells[REGN_CNTY_CDE]
-        #event['municipalitytype'] = cells[MUNITYPE]
-        #event['markerreference'] = cells[REF_MRKR]
-        #event['atintersection'] = cells[ATINTERSECTION_IND]
-        #event['compx'] = cells[COMPX]
-        #event['compy'] = cells[COMPY]
-        event['date'] = cells[ACC_DATE]
-        event['time'] = cells[ACC_TIME]
-        event['class'] = cells[DMV_ACCD_CLSF]
-        event['injuries'] = cells[NUM_OF_INJURIES]
-        event['fatalities'] = cells[NUM_OF_FATALITIES]
-        event['vehiclecount'] = cells[NUM_OF_VEH]
-        event['accidenttype'] = cells[ACCD_TYP]
-        event['collisiontype'] = cells[COLLISION_TYP]
-        event['trafficcontrol'] = cells[TRAF_CNTL]
-        #event['lightcondition'] = cells[LIGHT_COND]
-        #event['weather'] = cells[WEATHER]
-        #event['roadconditions'] = cells[ROAD_SURF_COND]
-        event['municipality'] = cells[COMP_MUNI]
-
-        if cells[COMP_MUNI] not in places:
-            places.append(cells[COMP_MUNI])
+        event['queryid'] = cells[QUERYID].strip()
+        event['casenum'] = cells[CASE_NUM].strip()
+        event['year'] = cells[CASE_YEAR].strip()
+        event['region'] = cells[REGN_CNTY_CDE].strip()
+        event['municipality'] = cells[REGN_CNTY_CDE].strip()
+        event['municipalitytype'] = cells[MUNITYPE].strip()
+        event['markerreference'] = cells[REF_MRKR].strip()
+        event['atintersection'] = cells[ATINTERSECTION_IND].strip()
+        event['compx'] = cells[COMPX].strip()
+        event['compy'] = cells[COMPY].strip()
+        event['date'] = cells[ACC_DATE].strip()
+        event['time'] = cells[ACC_TIME].strip()
+        event['class'] = cells[DMV_ACCD_CLSF].strip()
+        event['injuries'] = cells[NUM_OF_INJURIES].strip()
+        event['fatalities'] = cells[NUM_OF_FATALITIES].strip()
+        event['vehiclecount'] = cells[NUM_OF_VEH].strip()
+        event['accidenttype'] = cells[ACCD_TYP].strip()
+        event['collisiontype'] = cells[COLLISION_TYP].strip()
+        event['trafficcontrol'] = cells[TRAF_CNTL].strip()
+        event['lightcondition'] = cells[LIGHT_COND].strip()
+        event['weather'] = cells[WEATHER].strip()
+        event['roadconditions'] = cells[ROAD_SURF_COND].strip()
+        event['municipality'] = cells[COMP_MUNI].strip()
 
         #easting = int(event['compx'])
         #northing = int(event['compy'])
@@ -82,7 +78,7 @@ def readdata(csvfile):
         event['lat'] = lat
         event['lng'] = lng
 
-        events.append(event)
+        accidents.append(event)
 
         count += 1
         if ( count % 100 == 0 ):
@@ -91,14 +87,20 @@ def readdata(csvfile):
         #print "{0}: {1}".format(count,row)
 
     f.close()
-
-    with open('events.json','w') as outfile:
-        outfile.write(json.dumps(events))
-
-    with open('places.json','w') as outfile:
-        outfile.write(json.dumps(places))
+    
+    #for key in accidents.keys():
+    #    with open('./web/static/accidents-{0}.json'.format(key.replace(' ','')),'w') as outfile:
+    #        outfile.write(json.dumps(accidents[key]))
+    #
+    #with open('./web/static/places.json','w') as outfile:
+    #    outfile.write(json.dumps(places))
+    #
+    #with open('./web/static/years.json','w') as outfile:
+    #    outfile.write(json.dumps(years))
 
     print 'done.'
+
+    return accidents;
 
 if __name__ == '__main__':
 
