@@ -3,14 +3,18 @@
 
     <title>Monroe County Traffic Injuries & Fatalities, 2010-2013</title>
 
-    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
+    <link rel="stylesheet" href="jquery.jqplot.min.css" />
 
-    <script src="http://code.jquery.com/jquery-1.11.0.js"></script>
-    <script src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js"></script>
+    <script language="javascript" src="jquery.min.js"></script>
+    <script language="javascript" src="jquery.jqplot.min.js"></script>
+
+    <script language="javascript" type="text/javascript" src="jqplot.dateAxisRenderer.min.js"></script>
+    <script language="javascript" type="text/javascript" src="jqplot.canvasTextRenderer.min.js"></script>
+    <script language="javascript" type="text/javascript" src="jqplot.canvasAxisTickRenderer.min.js"></script>
+    <script language="javascript" type="text/javascript" src="jqplot.categoryAxisRenderer.min.js"></script>
+    <script language="javascript" type="text/javascript" src="jqplot.barRenderer.min.js"></script>
 
     <script src="pace.min.js"></script>
-
-    <script src="html5-canvas-bar-graph.js"></script>
 
     <style>
 
@@ -52,9 +56,19 @@
 
         <div style="width: 1200px; margin: auto;">
         
-        <div style="border: 1px solid #DDDDDD; margin: auto; width: 350px; height: 600px; float: left; margin-left: 25px; padding: 5px 5px 5px 5px;" id="querybox"></div>
+        <div style="border: 1px solid #DDDDDD; margin: auto; width: 350px; height: 600px; float: left; margin-left: 25px; padding: 5px 5px 5px 5px;" id="queryboxcontainer">
+            <div>
+                <p>
+                Select a year, and then an accident type from the drop downs below.  Then click query to se a graph of the number of those
+                types of accidents per municipality on a bar graph to the right.
+                </p>
+            </div>
+            <div id="querybox"></div>
+        </div>
 
-        <div style="border: 1px solid #DDDDDD; margin: auto; width: 800px; height: 600px; float: left;" id="graphdiv"></div>
+        <div style="border: 1px solid #DDDDDD; margin: auto; width: 800px; height: 600px; float: left;" id="graphdivcontainer">
+            <div id="graphdiv" style="height:600px; width:800px;"></div>
+        </div>
 
         </div>
 
@@ -76,52 +90,61 @@
 
         var townstats = {};
 
-        function createCanvas(divName) {
-				
-				var div = document.getElementById(divName);
-				var canvas = document.createElement('canvas');
-				div.appendChild(canvas);
-				if (typeof G_vmlCanvasManager != 'undefined') {
-					canvas = G_vmlCanvasManager.initElement(canvas);
-				}	
-				var ctx = canvas.getContext("2d");
-				return ctx;
-			}
-
         function showgraph() {
+        
+            $('#graphdiv').html('');
+
+            //var labels = [];
+             //var values = [];
+            //var zeros = [];
 
             var value = $('#queryselect').val();
+            var year = $('#yearselect').val();
+            var ignoreroch = $('#ignorerochester').is(':checked')
 
-            var labels = [];
             var values = [];
-            var zeros = [];
 
-            for(var key in townstats['2012']) {
+            for(var key in townstats[year]) {
 
-                labels.push(key);
-                zeros.push(0);
-                values.push(townstats['2012'][key][value]);
-
+                if ( !( ignoreroch == true & key == 'Rochester') ) {
+   
+                    // add label and value to array to plot
+                    values.push([key,townstats[year][key][value]]);
+                }
             }
 
-            var ctx = createCanvas("graphdiv");
-            var graph = new BarGraph(ctx);
-			graph.width = 600;
-			graph.height = 600;
-			//graph.maxValue = 30;
-			graph.margin = 2;
-			graph.colors = [ "#49a0d8"];
-			graph.rotateAxisText = true;
+            values = values.sort();
 
-            graph.maxvalue = 2000;
-
-            console.log(labels);
             console.log(values);
 
-            graph.xAxisLabelArr = labels;
-            graph.update(zeros);
-            graph.update(values);
-
+            var plot1 = $.jqplot(
+                'graphdiv',
+                [values],
+                {
+                    title: value,
+                    series:[
+                        {
+                            renderer:$.jqplot.BarRenderer,
+                            pointLabels:{
+                                show: true
+                            }
+                        }
+                    ],
+                    axesDefaults: {
+                        tickRenderer: $.jqplot.CanvasAxisTickRenderer ,
+                        tickOptions: {
+                            angle: -90,
+                            fontSize: '10pt'
+                        }
+                    },
+                    axes: {
+                        xaxis: {
+                            renderer: $.jqplot.CategoryAxisRenderer
+                        }
+                    }
+                }
+            );
+           
         }
 
 
@@ -132,13 +155,25 @@
                 townstats = data;
 
                 var html = '';
-               
+             
+                html += '<b style="font-size: 110%">Year</b></br>';
+                html += '<select id="yearselect">';
+                html += '<option value="2010">2010</option>';
+                html += '<option value="2011">2011</option>';
+                html += '<option value="2012">2012</option>';
+                html += '<option value="2013">2013</option>';
+                html += '</select></br></br>';
+  
+                html += '<b style="font-size: 110%">Accident Type</b></br>';
                 html += '<select id="queryselect">';
                 for(var key in data['2012']['Rochester']) {
                     html += '<option value="' + key + '">' + key + '</option>';
                 }
 
-                html += '</select>';
+                html += '</select></br></br>';
+
+                html += '<input type="checkbox" id="ignorerochester" value="ignorerochester">Ignore Rochester<put></br>';
+                html += '<p style="padding-left: 15px;">Note: Ignoring Rochester may be helpful as it\'s numbers are often much larger than other municipalities</p>';
 
                 html += '<button onclick="showgraph()">Query</button>';
 
