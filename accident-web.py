@@ -47,6 +47,10 @@ allowed = [
 def index():
     return render_template('index.html')
 
+@app.route('/stats')
+def stats():
+    return render_template('stats.html')
+
 @app.route('/count.json')
 def count():
     return json.dumps({'accidentcount': accidents.count()})
@@ -76,7 +80,7 @@ def getfields():
 @app.route('/query.json')
 def query():
 
-    print request.args
+    #print request.args
 
     try:
         q = {}

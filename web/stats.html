@@ -10,6 +10,8 @@
 
     <script src="pace.min.js"></script>
 
+    <script src="html5-canvas-bar-graph.js"></script>
+
     <style>
 
         .pace .pace-progress {
@@ -52,7 +54,7 @@
         
         <div style="border: 1px solid #DDDDDD; margin: auto; width: 350px; height: 600px; float: left; margin-left: 25px; padding: 5px 5px 5px 5px;" id="querybox"></div>
 
-        <div style="border: 1px solid #DDDDDD; margin: auto; width: 800px; height: 600px; float: left;" id="map-canvas"></div>
+        <div style="border: 1px solid #DDDDDD; margin: auto; width: 800px; height: 600px; float: left;" id="graphdiv"></div>
 
         </div>
 
@@ -72,8 +74,79 @@
 
         var events = [];
 
+        var townstats = {};
+
+        function createCanvas(divName) {
+				
+				var div = document.getElementById(divName);
+				var canvas = document.createElement('canvas');
+				div.appendChild(canvas);
+				if (typeof G_vmlCanvasManager != 'undefined') {
+					canvas = G_vmlCanvasManager.initElement(canvas);
+				}	
+				var ctx = canvas.getContext("2d");
+				return ctx;
+			}
+
+        function showgraph() {
+
+            var value = $('#queryselect').val();
+
+            var labels = [];
+            var values = [];
+            var zeros = [];
+
+            for(var key in townstats['2012']) {
+
+                labels.push(key);
+                zeros.push(0);
+                values.push(townstats['2012'][key][value]);
+
+            }
+
+            var ctx = createCanvas("graphdiv");
+            var graph = new BarGraph(ctx);
+			graph.width = 600;
+			graph.height = 600;
+			//graph.maxValue = 30;
+			graph.margin = 2;
+			graph.colors = [ "#49a0d8"];
+			graph.rotateAxisText = true;
+
+            graph.maxvalue = 2000;
+
+            console.log(labels);
+            console.log(values);
+
+            graph.xAxisLabelArr = labels;
+            graph.update(zeros);
+            graph.update(values);
+
+        }
+
+
         $(document).ready(function() {
 
+            $.getJSON('townstats.json', function( data )  {
+            
+                townstats = data;
+
+                var html = '';
+               
+                html += '<select id="queryselect">';
+                for(var key in data['2012']['Rochester']) {
+                    html += '<option value="' + key + '">' + key + '</option>';
+                }
+
+                html += '</select>';
+
+                html += '<button onclick="showgraph()">Query</button>';
+
+                $('#querybox').html(html);
+
+            });
+
+            /*
             var main = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: 'Map data © OpenStreetMap contributors',
                 minZoom: 10,
@@ -124,7 +197,7 @@
                 $('#querybox').html(html);
 
             });
-
+            */
         });
 
         function clearmap() {
